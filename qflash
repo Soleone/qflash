@@ -80,7 +80,17 @@ def main() -> int:
     print("qflash:", " ".join(subprocess.list2cmdline([x]) for x in command), flush=True)
     if args.dry_run:
         return 0
-    return subprocess.call(command)
+
+    # llama.cpp's build-tree binaries load their sibling shared libraries.
+    # Keep the launcher relocatable even when a prebuilt binary was configured
+    # in a different checkout and consequently contains a stale absolute RUNPATH.
+    env = os.environ.copy()
+    library_dir = str(server.resolve().parent)
+    old_library_path = env.get("LD_LIBRARY_PATH")
+    env["LD_LIBRARY_PATH"] = (
+        library_dir if not old_library_path else library_dir + os.pathsep + old_library_path
+    )
+    return subprocess.call(command, env=env)
 
 
 if __name__ == "__main__":

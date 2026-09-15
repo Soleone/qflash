@@ -17,9 +17,15 @@ Build it with:
 ```bash
 git clone https://github.com/ggml-org/llama.cpp.git llama.cpp-latest
 cmake -S llama.cpp-latest -B llama.cpp-latest/build \
-  -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release
+  -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_BUILD_RPATH_USE_ORIGIN=ON -DCMAKE_INSTALL_RPATH='$ORIGIN'
 cmake --build llama.cpp-latest/build --config Release -j
 ```
+
+`CMAKE_BUILD_RPATH_USE_ORIGIN` keeps the build-tree runtime library path
+relative to each executable instead of embedding the checkout's absolute
+path. The launcher also sets `LD_LIBRARY_PATH` to the server's sibling library
+directory, so an existing build remains usable after the project is moved.
 
 The launcher supports `LLAMA_SERVER_BIN=/path/to/llama-server` if a different checkout is desired. The older b10948 checkout was used as a historical apples-to-apples control, but is not required by the default setup.
 
