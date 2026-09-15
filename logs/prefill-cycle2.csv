@@ -1,0 +1,5 @@
+runtime,load_mode,batch,vram_mib,input_actual,prompt_tps,decode_tps,status
+b10948,auto,2048,19000,8200,646.80,18.34,ok
+b10948,none,2048,NA,8200,704.63,18.82,ok
+latest,auto,2048,NA,8200,660.45,19.24,ok
+latest,none,2048,NA,8200,698.65,18.11,ok

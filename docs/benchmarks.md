@@ -13,3 +13,16 @@ Batch 1024 uses approximately 15.6 GB at 250k and has similar decode speed, but 
 `--n-cpu-moe 40` did not produce a useful operating point on this machine. It only started at 65k context with batch 128, using approximately 21.2 GB VRAM and decoding at 19.7 tok/s.
 
 Raw measurements are in `logs/performance-matrix.csv` and `logs/batch-vram-matrix-memory.csv`. Runtime logs are ignored by Git.
+
+## Prefill cycle
+
+A controlled 8.2k-token prompt after a short warm-up was used to compare loading modes:
+
+| Runtime | Load mode | Prompt tok/s | Decode tok/s |
+|---|---|---:|---:|
+| b10948 | mmap/auto | 646.8 | 18.34 |
+| b10948 | eager/none | 704.6 | 18.82 |
+| latest | mmap/auto | 660.5 | 19.24 |
+| latest | eager/none | 698.7 | 18.11 |
+
+The earlier ~312 tok/s observation was a cold first request at a different prompt depth. Eager loading reads the model before serving, but a short warm-up is still useful for CUDA graph/kernel initialization.
