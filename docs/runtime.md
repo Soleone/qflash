@@ -9,7 +9,7 @@ llama.cpp-latest/build/bin/llama-server
 The validated checkout currently is:
 
 ```text
-llama.cpp commit 4c9233c034fc450dcf34c7c0988aebe6da5cdf1
+llama.cpp commit `4c9233c03` (short commit ID)
 ```
 
 Build it with:
@@ -27,7 +27,7 @@ relative to each executable instead of embedding the checkout's absolute
 path. The launcher also sets `LD_LIBRARY_PATH` to the server's sibling library
 directory, so an existing build remains usable after the project is moved.
 
-The launcher supports `LLAMA_SERVER_BIN=/path/to/llama-server` if a different checkout is desired. The older b10948 checkout was used as a historical apples-to-apples control, but is not required by the default setup.
+The launcher supports `LLAMA_SERVER_BIN=<path-to-llama-server>` if a different checkout is desired; no machine-specific path is required by the project. The older b10948 checkout was used as a historical apples-to-apples control, but is not required by the default setup.
 
 `qflash --eager` uses `--load-mode none`, so model loading completes before the server starts listening. It does not send a synthetic request; llama.cpp's own built-in warm-up remains enabled. Eager loading requires substantial system RAM and takes longer at startup.
 

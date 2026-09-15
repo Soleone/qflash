@@ -1,4 +1,4 @@
-Source: /run/media/soleone/Big Data/ai/llama-comparison/model/UD-Q4_K_XL
+Source: external model bundle (not committed)
 Local copy: models/qwen38/UD-Q4_K_XL
 Workspace link: docs/model/UD-Q4_K_XL
 

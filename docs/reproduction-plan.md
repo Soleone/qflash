@@ -33,10 +33,10 @@ The original TabbyAPI plus ExL3 result was about 3.4–4 tok/s.
 
 ## Model files
 
-Use a Linux path such as:
+Use a local model directory such as `$MODEL_ROOT`:
 
 ~~~text
-/data/models/qwen38/
+$MODEL_ROOT/
   model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf
   model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00002-of-00004.gguf
   model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00003-of-00004.gguf
@@ -78,7 +78,7 @@ Start the first GGUF shard. llama.cpp discovers the other shards in the same dir
 
 ~~~bash
 ./build/bin/llama-server \
-  -m /data/models/qwen38/model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf \
+  -m "$MODEL_ROOT/model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf" \
   -c 125184 \
   --host 127.0.0.1 --port 8081 \
   --fit off \

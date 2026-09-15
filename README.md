@@ -80,7 +80,6 @@ docs/model-manifest.json       model shard sizes and hashes
 docs/reproduction-plan.md      original experiment plan
 results/                       host and model verification records
 logs/                          benchmark measurements and ignored runtime logs
-.pi/models.json                optional Pi provider configuration
 ```
 
 The project is a **thin, reproducible llama.cpp launcher plus experiment record**, not a new inference runtime and not an Ollama wrapper.
