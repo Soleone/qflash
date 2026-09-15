@@ -31,6 +31,7 @@ exec "${LLAMA_SERVER_BIN:-./llama.cpp-latest/build/bin/llama-server}" \
   -c "${CONTEXT_CAPACITY:-$preset_context}" \
   --host 127.0.0.1 --port "${PORT:-8081}" \
   --fit "${FIT_MODE:-off}" \
+  --load-mode "${LOAD_MODE:-auto}" \
   ${GPU_LAYERS:+-ngl "$GPU_LAYERS"} \
   "${moe_args[@]}" \
   -np 1 \

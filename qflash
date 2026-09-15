@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Run the validated Qwen3.8 Flash Next llama.cpp configuration."""
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+PRESETS = {
+    "250k-balanced": (250000, 2048),
+    "250k-safe": (250000, 1024),
+    "250k-conservative": (250000, 512),
+    "180k-max": (180000, 4096),
+}
+
+
+def parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="qflash",
+        description="Run Qwen3.8 Flash Next with the validated llama.cpp CUDA setup.",
+    )
+    p.add_argument("--preset", choices=PRESETS, default="250k-balanced")
+    p.add_argument("--eager", action="store_true", help="read the model eagerly instead of using mmap")
+    p.add_argument("--context", type=int, help="override context capacity")
+    p.add_argument("--batch", type=int, help="override batch and ubatch size")
+    p.add_argument("--ubatch", type=int, help="override ubatch size")
+    p.add_argument("--port", type=int, default=8081)
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--threads", type=int, default=8)
+    p.add_argument("--server", type=Path, help="path to llama-server")
+    p.add_argument("--model", type=Path, help="path to the first GGUF shard")
+    p.add_argument("--dry-run", action="store_true", help="print the command without starting it")
+    return p
+
+
+def main() -> int:
+    args = parser().parse_args()
+    preset_context, preset_batch = PRESETS[args.preset]
+    context = args.context or preset_context
+    batch = args.batch or preset_batch
+    ubatch = args.ubatch or batch
+    server = args.server or Path(os.environ.get("LLAMA_SERVER_BIN", ROOT / "llama.cpp-latest/build/bin/llama-server"))
+    model = args.model or Path(
+        os.environ.get(
+            "QFLASH_MODEL",
+            ROOT / "docs/model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
+        )
+    )
+    if not server.is_file():
+        print(f"qflash: llama-server not found: {server}\nBuild it as described in docs/runtime.md.", file=sys.stderr)
+        return 1
+    if not model.is_file():
+        print(f"qflash: model shard not found: {model}\nSee docs/runtime.md.", file=sys.stderr)
+        return 1
+
+    command = [
+        str(server), "-m", str(model), "-c", str(context),
+        "--host", args.host, "--port", str(args.port),
+        "--fit", "off", "--load-mode", "none" if args.eager else "auto",
+        "-ngl", "999", "--cpu-moe", "-np", "1",
+        "-t", str(args.threads), "-tb", str(args.threads),
+        "-b", str(batch), "-ub", str(ubatch),
+        "--spec-type", "none", "--cache-type-k", "f16", "--cache-type-v", "f16",
+        "--lazy-mode", "off", "--jinja",
+    ]
+    print("qflash:", " ".join(subprocess.list2cmdline([x]) for x in command), flush=True)
+    if args.dry_run:
+        return 0
+    return subprocess.call(command)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

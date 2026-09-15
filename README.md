@@ -7,8 +7,8 @@ This project is **not Ollama**. It runs `llama.cpp` directly, with the model's M
 ## Quick start
 
 ```bash
-./run.sh check
-./run.sh
+./qflash --help
+./qflash
 ```
 
 The default server is:
@@ -31,10 +31,11 @@ models/qwen38/UD-Q4_K_XL/
 ## Presets
 
 ```bash
-./run.sh serve 250k-balanced      # recommended default
-./run.sh serve 250k-safe           # 250k, batch 1024, ~15.6 GB VRAM
-./run.sh serve 250k-conservative   # 250k, batch 512, ~14.0 GB VRAM
-./run.sh serve 180k-max            # 180k, batch 4096, ~20.2 GB VRAM
+./qflash                                  # recommended default
+./qflash --preset 250k-safe               # 250k, batch 1024
+./qflash --preset 250k-conservative       # 250k, batch 512
+./qflash --preset 180k-max                # 180k, batch 4096
+./qflash --eager                          # eagerly read model at startup
 ```
 
 Measured on the RTX 4090:
@@ -71,8 +72,8 @@ The local `llama.cpp` checkout is an experiment dependency, not a fork of Ollama
 ## Repository layout
 
 ```text
-run.sh                         one public entry point
-scripts/llama-server-control.sh  configurable server launcher
+qflash                         one public entry point
+scripts/llama-server-control.sh  legacy environment-based launcher
 docs/model-manifest.json       model shard sizes and hashes
 docs/reproduction-plan.md      original experiment plan
 results/                       host and model verification records

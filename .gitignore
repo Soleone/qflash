@@ -10,3 +10,5 @@ logs/*.log
 core
 .env
 .env.*
+__pycache__/
+*.pyc
