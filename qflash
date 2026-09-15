@@ -34,7 +34,7 @@ def parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--preset", choices=PRESETS, default="250k-balanced")
-    p.add_argument("--eager", action="store_true", help="read the model eagerly instead of using mmap")
+    p.add_argument("-e", "--eager", action="store_true", help="read the model eagerly instead of using mmap")
     p.add_argument("--context", type=int, help="override context capacity")
     p.add_argument("--batch", type=int, help="override batch and ubatch size")
     p.add_argument("--ubatch", type=int, help="override ubatch size")
