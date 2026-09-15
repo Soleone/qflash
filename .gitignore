@@ -1,0 +1,12 @@
+# Large model data and local build artifacts are not repository content.
+models/
+docs/model/UD-Q4_K_XL
+llama.cpp/
+llama.cpp-latest/
+llama.cpp-pr27742/
+results/**/*.json
+logs/*.log
+*.core
+core
+.env
+.env.*

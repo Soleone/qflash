@@ -1,0 +1,9 @@
+context,batch,pid,status,process_vram_mib,log
+180000,512,108096,ok,0,logs/matrix-180000-b512.log
+180000,1024,108581,ok,0,logs/matrix-180000-b1024.log
+180000,2048,108693,ok,0,logs/matrix-180000-b2048.log
+180000,4096,108784,ok,0,logs/matrix-180000-b4096.log
+250000,512,108891,ok,0,logs/matrix-250000-b512.log
+250000,1024,108986,ok,0,logs/matrix-250000-b1024.log
+250000,2048,109084,ok,0,logs/matrix-250000-b2048.log
+250000,4096,109331,failed,0,logs/matrix-250000-b4096.log

@@ -1,0 +1,5 @@
+context,batch,status,vram_mib
+65536,512,failed,0
+80000,512,failed,0
+100000,512,failed,0
+125000,512,failed,0

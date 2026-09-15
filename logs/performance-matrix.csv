@@ -1,0 +1,13 @@
+moe,context,batch,input_target,input_actual,prompt_tps,output_tokens,decode_tps,vram_mib,status
+all-cpu,180000,1024,8192,8198,454.24,32,19.61,12420,ok
+all-cpu,180000,1024,65536,65542,469.60,25,17.50,12420,ok
+all-cpu,180000,2048,8192,8198,665.14,32,19.06,15166,ok
+all-cpu,180000,2048,65536,65542,685.47,19,17.57,15166,ok
+all-cpu,250000,1024,8192,8198,465.39,32,19.63,15572,ok
+all-cpu,250000,1024,65536,65542,473.89,25,17.74,15572,ok
+all-cpu,250000,2048,8192,8198,674.23,32,19.50,19000,ok
+all-cpu,250000,2048,65536,65542,698.05,19,17.56,19000,ok
+ncmoe40,180000,1024,NA,NA,NA,NA,NA,NA,failed-start
+ncmoe40,180000,2048,NA,NA,NA,NA,NA,NA,failed-start
+ncmoe40,250000,1024,NA,NA,NA,NA,NA,NA,failed-start
+ncmoe40,250000,2048,NA,NA,NA,NA,NA,NA,failed-start

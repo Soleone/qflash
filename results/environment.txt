@@ -1,0 +1,22 @@
+=== Host ===
+Linux chad 7.2.3-arch1-3 #1 SMP PREEMPT_DYNAMIC Sun, 06 Sep 2026 13:01:04 +0000 x86_64 GNU/Linux
+
+=== CPU ===
+CPU(s):                                  16
+On-line CPU(s) list:                     0-15
+Model name:                              AMD Ryzen 7 5800X3D 8-Core Processor
+Thread(s) per core:                      2
+Core(s) per socket:                      8
+CPU(s) scaling MHz:                      81%
+NUMA node0 CPU(s):                       0-15
+
+=== GPU ===
+name, memory.total [MiB], driver_version
+NVIDIA GeForce RTX 4090, 24564 MiB, 610.57.04
+
+=== Model link ===
+/run/media/soleone/Big Data/ai/llama-comparison/model/UD-Q4_K_XL
+-rwxr-xr-x 1 soleone soleone 11M Sep 13 22:32 ./scripts/../docs/model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf
+-rwxr-xr-x 1 soleone soleone 47G Sep 13 23:21 ./scripts/../docs/model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00002-of-00004.gguf
+-rwxr-xr-x 1 soleone soleone 46G Sep 13 23:52 ./scripts/../docs/model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00003-of-00004.gguf
+-rwxr-xr-x 1 soleone soleone 12G Sep 13 23:37 ./scripts/../docs/model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00004-of-00004.gguf
