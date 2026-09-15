@@ -4,12 +4,8 @@ from __future__ import annotations
 
 import argparse
 import os
-import json
 import subprocess
 import sys
-import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -33,13 +29,12 @@ def parser() -> argparse.ArgumentParser:
             "  250k-conservative    250k context, batch 512\n"
             "  180k-max             180k context, batch 4096\n"
             "  80k-fast             80k context, batch 4096 (fast prefill)\n\n"
-            "Use --eager to eagerly load and warm the model before serving."
+            "Use --eager to eagerly load the model before serving."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--preset", choices=PRESETS, default="250k-balanced")
-    p.add_argument("--eager", action="store_true", help="eagerly load and warm the model before serving")
-    p.add_argument("--no-warmup", action="store_true", help="skip the throwaway request used by --eager")
+    p.add_argument("--eager", action="store_true", help="read the model eagerly instead of using mmap")
     p.add_argument("--context", type=int, help="override context capacity")
     p.add_argument("--batch", type=int, help="override batch and ubatch size")
     p.add_argument("--ubatch", type=int, help="override ubatch size")
@@ -85,55 +80,7 @@ def main() -> int:
     print("qflash:", " ".join(subprocess.list2cmdline([x]) for x in command), flush=True)
     if args.dry_run:
         return 0
-    if not args.eager or args.no_warmup:
-        return subprocess.call(command)
-
-    # Eager loading makes the model resident, but llama.cpp still initializes
-    # CUDA graphs and kernels on the first real inference. Prime those paths
-    # with a throwaway request before handing control to the user.
-    process = subprocess.Popen(command)
-    health_url = f"http://{args.host}:{args.port}/health"
-    completion_url = f"http://{args.host}:{args.port}/completion"
-    try:
-        deadline = time.monotonic() + 600
-        while time.monotonic() < deadline:
-            if process.poll() is not None:
-                return process.returncode or 1
-            try:
-                with urllib.request.urlopen(health_url, timeout=2) as response:
-                    if response.status == 200:
-                        break
-            except (OSError, urllib.error.URLError):
-                pass
-            time.sleep(1)
-        else:
-            print("qflash: timed out waiting for the server", file=sys.stderr)
-            process.terminate()
-            return 1
-
-        print("qflash: warming inference path with a throwaway request", flush=True)
-        payload = json.dumps({
-            "prompt": "Write a short answer.",
-            "n_predict": 8,
-            "temperature": 0,
-            "cache_prompt": False,
-        }).encode()
-        request = urllib.request.Request(
-            completion_url,
-            data=payload,
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(request, timeout=300):
-            pass
-        print("qflash: warm-up complete; server ready", flush=True)
-        return process.wait()
-    except KeyboardInterrupt:
-        process.terminate()
-        return process.wait()
-    except (OSError, urllib.error.URLError) as error:
-        print(f"qflash: warm-up failed: {error}", file=sys.stderr)
-        process.terminate()
-        return process.wait()
+    return subprocess.call(command)
 
 
 if __name__ == "__main__":

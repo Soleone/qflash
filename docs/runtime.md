@@ -23,7 +23,7 @@ cmake --build llama.cpp-latest/build --config Release -j
 
 The launcher supports `LLAMA_SERVER_BIN=/path/to/llama-server` if a different checkout is desired. The older b10948 checkout was used as a historical apples-to-apples control, but is not required by the default setup.
 
-`qflash --eager` uses `--load-mode none`, waits for model loading to finish, then sends one small throwaway request to initialize CUDA graphs and kernels. Use `--eager --no-warmup` if only eager model loading is wanted. Eager loading requires substantial system RAM and takes longer at startup.
+`qflash --eager` uses `--load-mode none`, so model loading completes before the server starts listening. It does not send a synthetic request; llama.cpp's own built-in warm-up remains enabled. Eager loading requires substantial system RAM and takes longer at startup.
 
 ## Model
 

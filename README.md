@@ -49,7 +49,7 @@ Measured on the RTX 4090:
 | 180k-max | 180k | 4096 | ~20.2 GB | highest candidate | ~18–20 tok/s |
 | 80k-fast | 80k | 4096 | ~12.5 GB | ~521 tok/s on diverse 16k input | ~18 tok/s |
 
-Batch size primarily affects prompt ingestion and temporary CUDA buffers. It has little effect on decode speed. Batch 4096 does not fit at 250k. `--eager` additionally sends one small throwaway request after loading to prime CUDA graphs before the server is handed to the user.
+Batch size primarily affects prompt ingestion and temporary CUDA buffers. It has little effect on decode speed. Batch 4096 does not fit at 250k. `--eager` only changes model loading; llama.cpp's own built-in warm-up remains enabled.
 
 ## What this project established
 
