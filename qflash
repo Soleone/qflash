@@ -38,6 +38,15 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--context", type=int, help="override context capacity")
     p.add_argument("--batch", type=int, help="override batch and ubatch size")
     p.add_argument("--ubatch", type=int, help="override ubatch size")
+    p.add_argument(
+        "-p",
+        "--parallel",
+        type=int,
+        choices=range(1, 4),
+        default=1,
+        metavar="N",
+        help="number of independent parallel sessions (1-3; shares --context)",
+    )
     p.add_argument("--port", type=int, default=8081)
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--threads", type=int, default=8)
@@ -71,7 +80,7 @@ def main() -> int:
         str(server), "-m", str(model), "-c", str(context),
         "--host", args.host, "--port", str(args.port),
         "--fit", "off", "--load-mode", "none" if args.eager else "auto",
-        "-ngl", "999", "--cpu-moe", "-np", "1",
+        "-ngl", "999", "--cpu-moe", "-np", str(args.parallel),
         "-t", str(args.threads), "-tb", str(args.threads),
         "-b", str(batch), "-ub", str(ubatch),
         "--spec-type", "none", "--cache-type-k", "f16", "--cache-type-v", "f16",

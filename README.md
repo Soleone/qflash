@@ -17,7 +17,7 @@ The default server is:
 - F16 KV cache
 - CPU MoE (`--cpu-moe`)
 - batch/ubatch 2048
-- one sequence
+- one sequence by default (`--parallel 2` or `--parallel 3` for more)
 - `http://127.0.0.1:8081/v1`
 
 The model shards are intentionally not committed. Place the four GGUF files at:
@@ -36,8 +36,15 @@ models/qwen38/UD-Q4_K_XL/
 ./qflash --preset 250k-conservative       # 250k, batch 512
 ./qflash --preset 180k-max                # 180k, batch 4096
 ./qflash --preset 80k-fast                 # 80k, batch 4096, fastest prompt path
+./qflash --parallel 2                     # two ~125k slots at 250k total context
+./qflash --parallel 3                     # three ~83k slots at 250k total context
 ./qflash --eager                          # eagerly read and warm model at startup
 ```
+
+`--parallel N` sets llama.cpp's number of independent server slots. The configured
+`--context` is shared across slots, so each slot gets approximately `context / N`
+tokens. Parallel slots share the model and can reduce prompt and generation
+throughput when active simultaneously.
 
 Measured on the RTX 4090:
 
