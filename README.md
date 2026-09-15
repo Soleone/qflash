@@ -35,6 +35,7 @@ models/qwen38/UD-Q4_K_XL/
 ./qflash --preset 250k-safe               # 250k, batch 1024
 ./qflash --preset 250k-conservative       # 250k, batch 512
 ./qflash --preset 180k-max                # 180k, batch 4096
+./qflash --preset 80k-fast                 # 80k, batch 4096, fastest prompt path
 ./qflash --eager                          # eagerly read and warm model at startup
 ```
 
@@ -46,6 +47,7 @@ Measured on the RTX 4090:
 | 250k-balanced | 250k | 2048 | ~19.0 GB | ~675–700 tok/s | ~18–20 tok/s |
 | 250k-conservative | 250k | 512 | ~14.0 GB | not fully benchmarked | ~18–20 tok/s |
 | 180k-max | 180k | 4096 | ~20.2 GB | highest candidate | ~18–20 tok/s |
+| 80k-fast | 80k | 4096 | ~12.5 GB | ~521 tok/s on diverse 16k input | ~18 tok/s |
 
 Batch size primarily affects prompt ingestion and temporary CUDA buffers. It has little effect on decode speed. Batch 4096 does not fit at 250k. `--eager` additionally sends one small throwaway request after loading to prime CUDA graphs before the server is handed to the user.
 

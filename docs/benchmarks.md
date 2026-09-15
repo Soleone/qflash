@@ -25,4 +25,6 @@ A controlled 8.2k-token prompt after a short warm-up was used to compare loading
 | latest | mmap/auto | 660.5 | 19.24 |
 | latest | eager/none | 698.7 | 18.11 |
 
-The earlier ~312 tok/s observation was a cold first request at a different prompt depth. Eager loading reads the model before serving, but a short warm-up is still useful for CUDA graph/kernel initialization.
+The earlier ~312 tok/s observation was a 14k-token coding request at 250k context with batch 2048. A diverse 16,116-token coding-style prompt at 80k context with batch 4096 reached **520.9 tok/s** prompt processing and used 12,456 MiB VRAM. This establishes `80k-fast` as the high-prefill preset; the trade-off is a smaller context ceiling.
+
+Eager loading reads the model before serving, but a short warm-up is still useful for CUDA graph/kernel initialization.

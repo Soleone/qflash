@@ -7,6 +7,8 @@ cd "$(dirname "$0")/.."
 case "${PRESET:-250k-balanced}" in
   baseline|180k-max)
     preset_context=180000; preset_batch=4096; preset_ubatch=4096 ;;
+  80k-fast)
+    preset_context=80000; preset_batch=4096; preset_ubatch=4096 ;;
   250k-balanced)
     preset_context=250000; preset_batch=2048; preset_ubatch=2048 ;;
   250k-safe)
@@ -37,6 +39,7 @@ exec "${LLAMA_SERVER_BIN:-./llama.cpp-latest/build/bin/llama-server}" \
   -np 1 \
   -t "${THREADS:-8}" -tb "${BATCH_THREADS:-8}" \
   -b "${BATCH_SIZE:-$preset_batch}" -ub "${UBATCH_SIZE:-$preset_ubatch}" \
+  -fa "${FLASH_ATTN:-auto}" \
   --spec-type none \
   --cache-type-k "${CACHE_TYPE_K:-f16}" --cache-type-v "${CACHE_TYPE_V:-f16}" \
   "${lazy_args[@]}" \
