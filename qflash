@@ -26,6 +26,16 @@ def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="qflash",
         description="Run Qwen3.8 Flash Next with the validated llama.cpp CUDA setup.",
+        epilog=(
+            "Presets:\n"
+            "  250k-balanced       250k context, batch 2048 (default)\n"
+            "  250k-safe            250k context, batch 1024\n"
+            "  250k-conservative    250k context, batch 512\n"
+            "  180k-max             180k context, batch 4096\n"
+            "  80k-fast             80k context, batch 4096 (fast prefill)\n\n"
+            "Use --eager to eagerly load and warm the model before serving."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--preset", choices=PRESETS, default="250k-balanced")
     p.add_argument("--eager", action="store_true", help="eagerly load and warm the model before serving")
