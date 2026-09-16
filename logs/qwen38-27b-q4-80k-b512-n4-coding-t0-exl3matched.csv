@@ -1,0 +1,2 @@
+prompt_target,prompt_actual,output_actual,prompt_tps,decode_tps,prompt_ms,decode_ms,cached_tokens
+8192,8214,512,2515.8195862711104,89.91671178632129,3264.94,5683.037,8725

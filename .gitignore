@@ -1,5 +1,6 @@
 # Large model data and local build artifacts are not repository content.
 models/
+.exl3/
 docs/model/UD-Q4_K_XL
 llama.cpp/
 llama.cpp-latest/

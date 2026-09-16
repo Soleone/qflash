@@ -1,0 +1,10 @@
+Act as a coding agent reviewing the qflash launcher below. The launcher must preserve the existing Flash-Next profile while adding fast Qwen3.8-27B profiles for a single RTX 4090. Propose the smallest safe patch that improves reproducibility or runtime safety. Explain the change, identify any VRAM risk, and include a concise unified diff. Do not invent command-line flags that are not supported by llama.cpp.
+
+Relevant launcher excerpt:
+
+PROFILES = {
+    "flash-next": {"preset": "250k-balanced", "cache": "f16", "spec": "none"},
+    "27b-fast": {"preset": "27b-fast", "cache": "q4_0", "spec": "draft-mtp", "spec_depth": 4},
+}
+
+The launcher maps a profile to context, batch, KV cache, GPU offload, and optional MTP flags. It runs one server slot by default. The machine has an RTX 4090 with 24 GB VRAM and a desktop compositor already using some VRAM. Keep all dense 27B weights on the GPU, avoid unsafe 4096/4096 allocations, and do not treat system RAM as fast VRAM.

@@ -1,8 +1,8 @@
-# Qwen3.8 Flash Next CUDA Lab
+# Qwen3.8 CUDA Lab
 
-A reproducible Linux/CUDA runner and benchmark notebook for **Qwen3.8-Flash-Next** on a single 24 GB RTX 4090.
+A reproducible Linux/CUDA runner and benchmark notebook for Qwen3.8 models on a single 24 GB RTX 4090.
 
-This project is **not Ollama**. It runs `llama.cpp` directly, with the model's MoE expert weights placed in system RAM (`--cpu-moe`) and attention/KV work placed on the GPU. The server exposes an OpenAI-compatible API for Pi, curl, and other clients.
+This project is **not Ollama**. The default profile uses ExLlamav3/TabbyAPI for Qwen3.8-27B EXL3. The original Flash-Next llama.cpp profile remains available explicitly. Both expose an OpenAI-compatible API for Pi, curl, and other clients.
 
 ## Quick start
 
@@ -13,14 +13,15 @@ This project is **not Ollama**. It runs `llama.cpp` directly, with the model's M
 
 The default server is:
 
-- 250k context
-- F16 KV cache
-- CPU MoE (`--cpu-moe`)
-- batch/ubatch 2048
-- one sequence by default (`--parallel 2` or `--parallel 3` for more)
-- `http://127.0.0.1:8081/v1`
+- 256k context
+- EXL3 Q4 KV cache
+- MTP depth 4
+- one session
+- `http://127.0.0.1:8082/v1`
 
-The model shards are intentionally not committed. Place the four GGUF files at:
+The Flash-Next model shards are only required for the explicit
+`--profile flash-next` profile. They are intentionally not committed. Place the
+four GGUF files at:
 
 ```text
 models/qwen38/UD-Q4_K_XL/
@@ -31,20 +32,86 @@ models/qwen38/UD-Q4_K_XL/
 ## Presets
 
 ```bash
-./qflash                                  # recommended default
-./qflash --preset 250k-safe               # 250k, batch 1024
-./qflash --preset 250k-conservative       # 250k, batch 512
-./qflash --preset 180k-max                # 180k, batch 4096
-./qflash --preset 80k-fast                 # 80k, batch 4096, fastest prompt path
-./qflash --parallel 2                     # two ~125k slots at 250k total context
-./qflash --parallel 3                     # three ~83k slots at 250k total context
-./qflash --eager                          # eagerly read and warm model at startup
+./qflash                                  # EXL3 256k profile (default)
+./qflash --profile flash-next --preset 250k-safe
+./qflash --profile flash-next --preset 250k-conservative
+./qflash --profile flash-next --preset 180k-max
+./qflash --profile flash-next --preset 80k-fast
+./qflash --profile flash-next --parallel 2
+./qflash --profile flash-next --eager
+./qflash --profile 27b                     # Q8 KV, safer 27B alternative
+./qflash --profile 27b-fast                # Q4 KV, throughput experiment
+./qflash --profile 27b-q3-fast             # Q3 weights, maximum speed experiment
+./qflash --profile 27b-long                # Q4 KV, longer-context experiment
 ```
+
+## Qwen3.8-27B alternative
+
+The `27b` profile is intended for the RTX 4090 and uses a single
+`Qwen3.8-27B-UD-Q4_K_XL.gguf` file. Put it at:
+
+```text
+models/qwen38-27b/Qwen3.8-27B-UD-Q4_K_XL.gguf
+```
+
+Start it with:
+
+```bash
+./qflash --profile 27b
+```
+
+The `27b` profile uses 64k context and Q8 KV as the safer baseline. The
+`27b-fast` profile uses 80k context, matched Q4 (`q4_0`) KV, and MTP depth 4.
+`27b-q3-fast` uses the smaller Q3 weight quantization at 128k context and MTP
+depth 5. It is the most promising speed profile, with a modest additional
+quality tradeoff. `27b-long` uses 128k matched Q4 KV without MTP, prioritizing
+context over output speed. Unlike Flash-Next, these profiles do not use
+`--cpu-moe`.
+
+System RAM is useful as pinned backing for `mmap+mlock` and startup/page-cache
+behavior, but moving dense layers into RAM generally reduces decode speed over
+PCIe. It is not a second VRAM pool that improves tokens/second.
+
+The upstream 24 GB recipe reports roughly 38-40 tok/s on an RTX A5000 at short
+context and about 32 tok/s at 128k with MTP. Our first local measurements reached 100-125 tok/s on Q4 at 64-96k context
+and roughly 150 tok/s on Q3 at 128k, using synthetic deterministic prompts.
+Random
+sampling and less predictable coding output will be lower. Treat those as
+speed ceilings, not daily-chat guarantees. The benchmark helper below records
+prompt and decode throughput separately.
 
 `--parallel N` sets llama.cpp's number of independent server slots. The configured
 `--context` is shared across slots, so each slot gets approximately `context / N`
 tokens. Parallel slots share the model and can reduce prompt and generation
 throughput when active simultaneously.
+
+## EXL3 default runtime
+
+The default `qflash` profile starts the ExLlamav3/TabbyAPI Qwen3.8-27B EXL3
+3.5 bpw model. The optimized presets are:
+
+```bash
+./qflash --profile 27b-exl3    # recommended 256k EXL3 profile
+./scripts/exl3-server.sh q4-128k
+./scripts/exl3-server.sh q8-128k
+```
+
+EXL3 is launched by `qflash` through the separate TabbyAPI runtime because it
+uses a different weight format and inference backend. The matched measurements
+and setup notes are in [`docs/alternatives.md`](docs/alternatives.md).
+
+### Reasoning controls
+
+Both the EXL3 and Flash-Next Pi profiles advertise reasoning and pass the
+thinking level through the Qwen chat template:
+
+```bash
+pi --model qflash-exl3/qwen38-27b-exl3-3.5bpw --thinking medium
+pi --model qflash-exl3/qwen38-27b-exl3-3.5bpw --thinking off
+```
+
+Qwen3.8 accepts `low`, `medium`, and `xhigh`; Pi's `minimal`/`low` map to
+`low`, `medium` maps to `medium`, and `high`/`xhigh`/`max` map to `xhigh`.
 
 Measured on the RTX 4090:
 
@@ -89,4 +156,4 @@ results/                       host and model verification records
 logs/                          benchmark measurements and ignored runtime logs
 ```
 
-The project is a **thin, reproducible llama.cpp launcher plus experiment record**, not a new inference runtime and not an Ollama wrapper.
+The project is a **thin, reproducible llama.cpp launcher plus experiment record**, not a new inference runtime and not an Ollama wrapper. NInfer-4090 is tracked as an optional alternative in the benchmark notes because it uses a separate `.ninfer` artifact and specialized engine rather than the GGUF path.

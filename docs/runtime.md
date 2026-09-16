@@ -1,6 +1,7 @@
 # Runtime setup
 
-The launcher expects a CUDA-built `llama-server` at:
+The default launcher profile uses EXL3/TabbyAPI. The original GGUF profiles use
+a CUDA-built `llama-server` at:
 
 ```text
 llama.cpp-latest/build/bin/llama-server
@@ -28,6 +29,23 @@ path. The launcher also sets `LD_LIBRARY_PATH` to the server's sibling library
 directory, so an existing build remains usable after the project is moved.
 
 The launcher supports `LLAMA_SERVER_BIN=<path-to-llama-server>` if a different checkout is desired; no machine-specific path is required by the project. The older b10948 checkout was used as a historical apples-to-apples control, but is not required by the default setup.
+
+For the original llama.cpp dense/hybrid alternative, put
+`Qwen3.8-27B-UD-Q4_K_XL.gguf` in `models/qwen38-27b/` and choose a profile:
+
+```bash
+qflash --profile 27b          # Q8 KV, MTP depth 2, safer 64k baseline
+qflash --profile 27b-fast     # Q4 KV, MTP depth 4, 80k speed experiment
+qflash --profile 27b-q3-fast  # Q3 weights, MTP depth 5, 128k speed experiment
+qflash --profile 27b-long     # Q4 KV, 128k capacity, MTP disabled
+qflash --profile 27b-exl3      # EXL3 Q4 KV, 256k maximum-context setup
+```
+
+The GGUF 27B profiles use `-ngl 999`, `--no-host`, and Flash Attention; they
+do not use `--cpu-moe`. The sizes leave room for the desktop compositor
+currently using part of the 4090's VRAM. Larger contexts can be tried with
+`--context` after closing GPU-heavy applications. The default EXL3 profile is
+started with `qflash` and does not require `llama-server`.
 
 `qflash --eager` uses `--load-mode none`, so model loading completes before the server starts listening. It does not send a synthetic request; llama.cpp's own built-in warm-up remains enabled. Eager loading requires substantial system RAM and takes longer at startup.
 

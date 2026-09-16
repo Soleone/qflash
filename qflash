@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Run the validated Qwen3.8 Flash Next llama.cpp configuration."""
+"""Run the default Qwen3.8-27B EXL3 configuration or another Qwen3.8 profile."""
 from __future__ import annotations
 
 import argparse
 import os
+import socket
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -17,23 +20,91 @@ PRESETS = {
     "80k-fast": (80000, 4096),
 }
 
+PROFILES = {
+    "flash-next": {
+        "description": "Qwen3.8-Flash-Next MoE, 250k context, CPU MoE",
+        "model": "docs/model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
+        "preset": "250k-balanced",
+        "cache": "f16",
+        "spec": "none",
+    },
+    "27b": {
+        "description": "Qwen3.8-27B dense/hybrid, 64k context, Q8 KV + MTP",
+        "model": "models/qwen38-27b/Qwen3.8-27B-UD-Q4_K_XL.gguf",
+        "preset": "27b-safe",
+        "cache": "q8_0",
+        "spec": "draft-mtp",
+        "spec_depth": 2,
+    },
+    "27b-fast": {
+        "description": "Qwen3.8-27B dense/hybrid, 80k context, Q4 KV + MTP",
+        "model": "models/qwen38-27b/Qwen3.8-27B-UD-Q4_K_XL.gguf",
+        "preset": "27b-fast",
+        "cache": "q4_0",
+        "spec": "draft-mtp",
+        "spec_depth": 4,
+    },
+    "27b-q3-fast": {
+        "description": "Qwen3.8-27B Q3, 128k context, Q4 KV + deep MTP",
+        "model": "models/qwen38-27b/Qwen3.8-27B-UD-Q3_K_XL.gguf",
+        "preset": "27b-q3-fast",
+        "cache": "q4_0",
+        "spec": "draft-mtp",
+        "spec_depth": 5,
+    },
+    "27b-long": {
+        "description": "Qwen3.8-27B, 128k capacity, Q4 KV without MTP",
+        "model": "models/qwen38-27b/Qwen3.8-27B-UD-Q4_K_XL.gguf",
+        "preset": "27b-long",
+        "cache": "q4_0",
+        "spec": "none",
+    },
+    "27b-exl3": {
+        "description": "Qwen3.8-27B EXL3, 256k context, Q4 KV + MTP",
+        "runtime": "exl3",
+        "preset": "exl3-256k",
+    },
+}
+
+PROFILE_PRESETS = {
+    "27b-safe": (65536, 512),
+    "27b-fast": (80000, 512),
+    "27b-q3-fast": (131072, 512),
+    "27b-long": (131072, 512),
+    "exl3-256k": (262144, 512),
+}
+
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="qflash",
-        description="Run Qwen3.8 Flash Next with the validated llama.cpp CUDA setup.",
+        description="Run a Qwen3.8 model with the validated CUDA runtime profile.",
         epilog=(
-            "Presets:\n"
+            "Profiles:\n"
+            "  27b-exl3              Qwen3.8-27B EXL3, 256k maximum-context setup (default)\n"
+            "  flash-next            existing 125B MoE setup (use explicitly)\n"
+            "  27b                   Qwen3.8-27B Q8 KV/MTP setup\n"
+            "  27b-fast              Qwen3.8-27B Q4 KV/MTP speed setup\n"
+            "  27b-q3-fast           Q3 quant, 128k, deeper MTP speed setup\n"
+            "  27b-long              Qwen3.8-27B Q4 KV/long-context setup\n"
+            "  27b-exl3              Qwen3.8-27B EXL3, 256k maximum-context setup\n\n"
+            "Flash-Next presets:\n"
             "  250k-balanced       250k context, batch 2048 (default)\n"
             "  250k-safe            250k context, batch 1024\n"
             "  250k-conservative    250k context, batch 512\n"
             "  180k-max             180k context, batch 4096\n"
             "  80k-fast             80k context, batch 4096 (fast prefill)\n\n"
+            "The 27b profiles are sized for this 24 GB desktop GPU layout.\n"
+            "27b-fast uses matched q4_0 KV and draft MTP for throughput experiments.\n"
             "Use --eager to eagerly load the model before serving."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    p.add_argument("--preset", choices=PRESETS, default="250k-balanced")
+    p.add_argument("--profile", choices=PROFILES, default="27b-exl3", help="model/runtime profile")
+    p.add_argument("--preset", choices=[*PRESETS, *PROFILE_PRESETS], help="context and batch preset")
+    p.add_argument("--kv-cache", choices=("f16", "q8_0", "q4_0"), help="override K/V cache type")
+    p.add_argument("--spec", choices=("none", "draft-mtp"), help="override speculative decoding mode")
+    p.add_argument("--spec-depth", type=int, metavar="N", help="maximum MTP draft tokens")
     p.add_argument("-e", "--eager", action="store_true", help="read the model eagerly instead of using mmap")
     p.add_argument("--context", type=int, help="override context capacity")
     p.add_argument("--batch", type=int, help="override batch and ubatch size")
@@ -47,7 +118,7 @@ def parser() -> argparse.ArgumentParser:
         metavar="N",
         help="number of independent parallel sessions (1-3; shares --context)",
     )
-    p.add_argument("--port", type=int, default=8081)
+    p.add_argument("--port", type=int, help="server port (8081 GGUF, 8082 EXL3 by default)")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--threads", type=int, default=8)
     p.add_argument("--server", type=Path, help="path to llama-server")
@@ -58,15 +129,65 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = parser().parse_args()
-    preset_context, preset_batch = PRESETS[args.preset]
+    profile = PROFILES[args.profile]
+    port = args.port or (8082 if profile.get("runtime") == "exl3" else 8081)
+
+    if profile.get("runtime") == "exl3":
+        if args.preset and args.preset != "exl3-256k":
+            print("qflash: 27b-exl3 uses the fixed exl3-256k maximum-context preset", file=sys.stderr)
+            return 2
+        launcher = ROOT / "scripts/exl3-server.sh"
+        command = [str(launcher), "q4-256k"]
+        print("qflash:", " ".join(subprocess.list2cmdline([x]) for x in command), flush=True)
+        if args.dry_run:
+            return 0
+        try:
+            with socket.create_connection((args.host, port), timeout=1):
+                pass
+        except OSError:
+            pass
+        else:
+            try:
+                with urllib.request.urlopen(f"http://{args.host}:{port}/health", timeout=2) as response:
+                    if response.status == 200:
+                        print(f"qflash: EXL3 server already running at http://{args.host}:{port}")
+                        return 0
+            except (urllib.error.URLError, TimeoutError):
+                pass
+            print(
+                f"qflash: port {args.host}:{port} is already in use; refusing to start a second EXL3 server",
+                file=sys.stderr,
+            )
+            return 1
+        env = os.environ.copy()
+        env["EXL3_HOST"] = args.host
+        env["EXL3_PORT"] = str(port)
+        return subprocess.call(command, env=env)
+
+    preset_name = args.preset or profile["preset"]
+    cache_type = args.kv_cache or profile["cache"]
+    spec_type = args.spec or profile["spec"]
+    spec_depth = args.spec_depth or (profile.get("spec_depth", 2) if spec_type == "draft-mtp" else None)
+    presets = {**PRESETS, **PROFILE_PRESETS}
+    preset_context, preset_batch = presets[preset_name]
     context = args.context or preset_context
     batch = args.batch or preset_batch
     ubatch = args.ubatch or batch
-    server = args.server or Path(os.environ.get("LLAMA_SERVER_BIN", ROOT / "llama.cpp-latest/build/bin/llama-server"))
+    configured_server = os.environ.get("LLAMA_SERVER_BIN")
+    if args.server:
+        server = args.server
+    elif configured_server:
+        server = Path(configured_server)
+    else:
+        server_candidates = (
+            ROOT / "llama.cpp-latest/build/bin/llama-server",
+            ROOT / "llama.cpp/build/bin/llama-server",
+        )
+        server = next((candidate for candidate in server_candidates if candidate.is_file()), server_candidates[0])
     model = args.model or Path(
         os.environ.get(
             "QFLASH_MODEL",
-            ROOT / "docs/model/UD-Q4_K_XL/Qwen3.8-Flash-Next-UD-Q4_K_XL-00001-of-00004.gguf",
+            ROOT / profile["model"],
         )
     )
     if not server.is_file():
@@ -76,16 +197,28 @@ def main() -> int:
         print(f"qflash: model shard not found: {model}\nSee docs/runtime.md.", file=sys.stderr)
         return 1
 
+    load_mode = "none" if args.eager else ("mmap+mlock" if args.profile != "flash-next" else "auto")
     command = [
         str(server), "-m", str(model), "-c", str(context),
-        "--host", args.host, "--port", str(args.port),
-        "--fit", "off", "--load-mode", "none" if args.eager else "auto",
-        "-ngl", "999", "--cpu-moe", "-np", str(args.parallel),
+        "--host", args.host, "--port", str(port),
+        "--fit", "off", "--load-mode", load_mode,
+        "-ngl", "999", "-np", str(args.parallel),
         "-t", str(args.threads), "-tb", str(args.threads),
         "-b", str(batch), "-ub", str(ubatch),
-        "--spec-type", "none", "--cache-type-k", "f16", "--cache-type-v", "f16",
+        "--cache-type-k", cache_type, "--cache-type-v", cache_type,
+        "--spec-type", spec_type,
         "--lazy-mode", "off", "--jinja",
     ]
+    if args.profile == "flash-next":
+        command.append("--cpu-moe")
+    else:
+        command.extend(["--flash-attn", "on", "--no-host"])
+    if spec_type == "draft-mtp":
+        command.extend([
+            "--spec-draft-n-max", str(spec_depth),
+            "--spec-draft-type-k", "q8_0", "--spec-draft-type-v", "q8_0",
+            "--spec-draft-poll", "1",
+        ])
     print("qflash:", " ".join(subprocess.list2cmdline([x]) for x in command), flush=True)
     if args.dry_run:
         return 0
