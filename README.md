@@ -19,6 +19,22 @@ The default server is:
 - one session
 - `http://127.0.0.1:8082/v1`
 
+## Current recommendation
+
+Use the default EXL3 Qwen3.8-27B profile for normal Pi coding-agent work. It is
+much faster than Flash-Next while retaining a practical 260k-token session.
+Keep Flash-Next as the explicit quality fallback for unusually difficult tasks.
+
+| Model | Runtime and cache | Practical context | Representative speed |
+|---|---|---:|---|
+| **Qwen3.8-27B EXL3** | 3.5 bpw, Q4 KV, MTP4 | **262k configured; 260k tested** | 2,334 / 156 tok/s at 8k; 1,319 / 102 at 131k; 890 / 78 at 260k |
+| Qwen3.8-Flash-Next | GGUF, F16 KV, CPU MoE | 250k configured | roughly 675–700 / 18–20 tok/s on balanced runs; roughly 300 / 20 at very long context |
+
+Speed pairs are prompt/decode tok/s. The 27B model is the recommended default
+because its decode rate is several times higher and its incremental cached-agent
+latency is much lower. Flash-Next remains the larger, higher-quality model, but
+its CPU MoE execution makes it substantially slower.
+
 The Flash-Next model shards are only required for the explicit
 `--profile flash-next` profile. They are intentionally not committed. Place the
 four GGUF files at:
@@ -45,7 +61,7 @@ models/qwen38/UD-Q4_K_XL/
 ./qflash --profile 27b-long                # Q4 KV, longer-context experiment
 ```
 
-## Qwen3.8-27B alternative
+## Qwen3.8-27B GGUF alternatives
 
 The `27b` profile is intended for the RTX 4090 and uses a single
 `Qwen3.8-27B-UD-Q4_K_XL.gguf` file. Put it at:
@@ -113,7 +129,10 @@ pi --model qflash-exl3/qwen38-27b-exl3-3.5bpw --thinking off
 Qwen3.8 accepts `low`, `medium`, and `xhigh`; Pi's `minimal`/`low` map to
 `low`, `medium` maps to `medium`, and `high`/`xhigh`/`max` map to `xhigh`.
 
-Measured on the RTX 4090:
+## Flash-Next reference presets
+
+These measurements apply to the explicit `--profile flash-next` profile, not the
+EXL3 default:
 
 | Preset | Context | Batch | VRAM | Prompt speed | Decode speed |
 |---|---:|---:|---:|---:|---:|
