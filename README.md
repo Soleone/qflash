@@ -2,7 +2,7 @@
 
 A reproducible Linux/CUDA runner and benchmark notebook for Qwen3.8 models on a single 24 GB RTX 4090.
 
-This project is **not Ollama**. The default profile uses ExLlamav3/TabbyAPI for Qwen3.8-27B EXL3. The original Flash-Next llama.cpp profile remains available explicitly. Both expose an OpenAI-compatible API for Pi, curl, and other clients.
+The default profile uses ExLlamav3/TabbyAPI for Qwen3.8-27B EXL3. The original Flash-Next llama.cpp profile remains available explicitly. Both expose an OpenAI-compatible API for Pi, curl, and other clients.
 
 ## Quick start
 
