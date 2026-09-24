@@ -60,9 +60,16 @@ PROFILES = {
         "spec": "none",
     },
     "27b-exl3": {
-        "description": "Qwen3.8-27B EXL3, 256k context, Q4 KV + MTP",
+        "description": "Qwen3.8-27B EXL3 3.5 bpw, 256k context, Q4 KV + MTP",
         "runtime": "exl3",
         "preset": "exl3-256k",
+        "model_name": "qwen38-27b-exl3-3.5bpw",
+    },
+    "27b-exl3-3.0bpw": {
+        "description": "Qwen3.8-27B EXL3 3.0 bpw, 256k context, Q4 KV + MTP",
+        "runtime": "exl3",
+        "preset": "exl3-256k",
+        "model_name": "qwen38-27b-exl3-3.0bpw",
     },
 }
 
@@ -87,7 +94,7 @@ def parser() -> argparse.ArgumentParser:
             "  27b-fast              Qwen3.8-27B Q4 KV/MTP speed setup\n"
             "  27b-q3-fast           Q3 quant, 128k, deeper MTP speed setup\n"
             "  27b-long              Qwen3.8-27B Q4 KV/long-context setup\n"
-            "  27b-exl3              Qwen3.8-27B EXL3, 256k maximum-context setup\n\n"
+            "  27b-exl3-3.0bpw      Qwen3.8-27B EXL3 3.0 bpw comparison\n\n"
             "Flash-Next presets:\n"
             "  250k-balanced       250k context, batch 2048 (default)\n"
             "  250k-safe            250k context, batch 1024\n"
@@ -134,10 +141,10 @@ def main() -> int:
 
     if profile.get("runtime") == "exl3":
         if args.preset and args.preset != "exl3-256k":
-            print("qflash: 27b-exl3 uses the fixed exl3-256k maximum-context preset", file=sys.stderr)
+            print(f"qflash: {args.profile} uses the fixed exl3-256k maximum-context preset", file=sys.stderr)
             return 2
         launcher = ROOT / "scripts/exl3-server.sh"
-        command = [str(launcher), "q4-256k"]
+        command = [str(launcher), "q4-256k", profile["model_name"]]
         print("qflash:", " ".join(subprocess.list2cmdline([x]) for x in command), flush=True)
         if args.dry_run:
             return 0

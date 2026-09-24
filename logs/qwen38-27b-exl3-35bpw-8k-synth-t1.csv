@@ -1,0 +1,2 @@
+prompt_target,prompt_actual,output_actual,prompt_tps,decode_tps,prompt_ms,decode_ms,total_ms,cached_tokens,accepted_draft,rejected_draft
+8192,8192,256,2288.27,142.95,3580.0,1790.0,5370.0,0,202,14

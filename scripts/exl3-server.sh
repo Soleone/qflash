@@ -27,7 +27,7 @@ case "$PROFILE" in
     DRAFT=4
     ;;
   *)
-    echo "usage: $0 {q4-256k|q4-128k|q8-128k}" >&2
+    echo "usage: $0 {q4-256k|q4-128k|q8-128k} [model-name]" >&2
     exit 2
     ;;
 esac
@@ -35,12 +35,17 @@ esac
 PYTHON="$ROOT/.exl3/venv/bin/python"
 TABBY="$ROOT/.exl3/TabbyAPI"
 MODEL_DIR="$ROOT/models"
+MODEL_NAME=${2:-qwen38-27b-exl3-3.5bpw}
+if [[ ! "$MODEL_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]]; then
+  echo "EXL3 model name must be a directory name under models" >&2
+  exit 2
+fi
 if [[ ! -x "$PYTHON" || ! -f "$TABBY/main.py" ]]; then
   echo "EXL3 runtime is not installed under .exl3; see docs/alternatives.md" >&2
   exit 1
 fi
-if [[ ! -d "$MODEL_DIR/qwen38-27b-exl3-3.5bpw" ]]; then
-  echo "EXL3 model not found: $MODEL_DIR/qwen38-27b-exl3-3.5bpw" >&2
+if [[ ! -d "$MODEL_DIR/$MODEL_NAME" ]]; then
+  echo "EXL3 model not found: $MODEL_DIR/$MODEL_NAME" >&2
   exit 1
 fi
 
@@ -61,7 +66,7 @@ logging:
 
 model:
   model_dir: "$MODEL_DIR"
-  model_name: qwen38-27b-exl3-3.5bpw
+  model_name: "$MODEL_NAME"
   backend: exllamav3
   max_seq_len: $CONTEXT
   cache_size: $CONTEXT

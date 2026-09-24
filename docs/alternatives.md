@@ -163,6 +163,35 @@ PATH=.exl3/venv/bin:$PATH \
   --url http://127.0.0.1:8082 --output-tokens 256 --runs 3
 ```
 
+### Preliminary 3.0 bpw trial
+
+The optional 3.0 bpw model is downloaded under
+`models/qwen38-27b-exl3-3.0bpw/` from
+[turboderp/Qwen3.8-27B-exl3](https://huggingface.co/turboderp/Qwen3.8-27B-exl3/tree/SC_3.00bpw_H4_V4),
+pinned to revision `004a887127d8304ca2d5475d3a3c41f1761fdd27`. Select it with
+`./qflash --profile 27b-exl3-3.0bpw`; the 3.5 bpw model remains the default
+under `./qflash --profile 27b-exl3`.
+
+At the same `q4-256k` settings on the RTX 4090, the EXL3 process used 18,266
+MiB with 3.5 bpw and 16,366 MiB with 3.0 bpw, a measured saving of 1,900 MiB
+(about 1.86 GiB). Total GPU use fell from 21,386 to 19,434 MiB with the desktop
+active. The model directories occupy 15.36 GB and 13.01 GB respectively.
+
+A one-session, 8k synthetic-prompt smoke benchmark (three measured runs, one
+warmup, 256 output tokens) gave medians of 2,288 / 143 tok/s prompt/decode at
+3.5 bpw and 2,308 / 160 tok/s at 3.0 bpw. The prefill result is effectively
+unchanged; decode was about 12% faster in this small sample, but MTP acceptance
+varies and this is not enough evidence to promise a speedup. Raw rows are in
+[`logs/qwen38-27b-exl3-35bpw-8k-synth-t1.csv`](../logs/qwen38-27b-exl3-35bpw-8k-synth-t1.csv)
+and [`logs/qwen38-27b-exl3-30bpw-8k-synth-t1.csv`](../logs/qwen38-27b-exl3-30bpw-8k-synth-t1.csv).
+
+This is an artifact comparison, not an isolated bitrate test: the 3.0 config
+uses a 4-bit head and 3-bit MTP weights, versus the current 3.5 model's 6-bit
+head and 4-bit MTP weights. The existing 3.5 quant is workload-calibrated for
+coding and math reasoning; the 3.0 build uses a separate quantization recipe.
+The 3.0 server loaded with the 262k Q4-cache setting and served an 8k request;
+a 260k-prompt run and task quality have not yet been evaluated.
+
 The `q4-256k` preset is the best default for this 24 GB card. Use `q4-128k`
 when prompt latency matters more than capacity, and `q8-128k` when preserving
 KV precision matters more than VRAM headroom. Keep one runtime loaded at a

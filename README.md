@@ -108,6 +108,7 @@ The default `qflash` profile starts the ExLlamav3/TabbyAPI Qwen3.8-27B EXL3
 
 ```bash
 ./qflash --profile 27b-exl3    # recommended 256k EXL3 profile
+./qflash --profile 27b-exl3-3.0bpw  # local 3.0bpw comparison
 ./scripts/exl3-server.sh q4-128k
 ./scripts/exl3-server.sh q8-128k
 ```
